@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Game World</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, "Noto Sans KR", sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #fff4d6, #ffe0e8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            text-align: center;
+        }
+
+        .title {
+            margin-bottom: 45px;
+        }
+
+        .title h1 {
+            font-size: 48px;
+            font-weight: 800;
+            color: #222;
+            margin-bottom: 12px;
+        }
+
+        .title p {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .games {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+        }
+
+        .game-card {
+            text-decoration: none;
+            color: inherit;
+            background: white;
+            border-radius: 28px;
+            padding: 35px 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            display: block;
+        }
+
+        .game-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
+        }
+
+        .icon {
+            width: 130px;
+            height: 130px;
+            margin: 0 auto 25px;
+            border-radius: 30px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 70px;
+        }
+
+        .uno-icon {
+            background: linear-gradient(135deg, #ff3b30, #ff9500);
+        }
+
+        .ramen-icon {
+            background: linear-gradient(135deg, #ffd60a, #ff9f0a);
+        }
+
+        .game-card h2 {
+            font-size: 30px;
+            margin-bottom: 12px;
+        }
+
+        .game-card p {
+            font-size: 16px;
+            color: #777;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .play-button {
+            display: inline-block;
+            padding: 13px 28px;
+            border-radius: 50px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .uno-button {
+            background: #ff3b30;
+        }
+
+        .ramen-button {
+            background: #ff9500;
+        }
+
+        .footer {
+            margin-top: 40px;
+            color: #888;
+            font-size: 14px;
+        }
+
+        @media (max-width: 700px) {
+            .title h1 {
+                font-size: 36px;
+            }
+
+            .games {
+                grid-template-columns: 1fr;
+            }
+
+            .game-card {
+                padding: 30px 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="title">
+            <h1>🎮 Mini Game World</h1>
+            <p>재미있는 미니게임을 골라보세요!</p>
+        </div>
+
+        <div class="games">
+
+            <a href="uno.html" class="game-card">
+                <div class="icon uno-icon">
+                    🃏
+                </div>
+
+                <h2>UNO</h2>
+
+                <p>
+                    카드를 내고 색과 숫자를 맞추며<br>
+                    마지막까지 살아남아 보세요!
+                </p>
+
+                <span class="play-button uno-button">
+                    UNO 게임 시작 →
+                </span>
+            </a>
+
+            <a href="ramen.html" class="game-card">
+                <div class="icon ramen-icon">
+                    🍜
+                </div>
+
+                <h2>라면 만들기</h2>
+
+                <p>
+                    재료를 선택하고 맛있는 라면을<br>
+                    나만의 방식으로 만들어 보세요!
+                </p>
+
+                <span class="play-button ramen-button">
+                    라면 만들기 →
+                </span>
+            </a>
+
+        </div>
+
+        <div class="footer">
+            © 2026 Mini Game World
+        </div>
+
+    </div>
+
+</body>
+</html>

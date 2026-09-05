@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>라면 가게 🍜</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, "Malgun Gothic", sans-serif;
+  background: #ffe9b3;
+  color: #3b2416;
+}
+
+#game {
+  width: min(100%, 1000px);
+  min-height: 100vh;
+  margin: auto;
+  background: #fff8e8;
+  box-shadow: 0 0 30px #c89b5b;
+}
+
+/* 상단 */
+header {
+  background: #ef4b35;
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.stats {
+  display: flex;
+  gap: 12px;
+}
+
+.stat {
+  background: #b92f21;
+  padding: 8px 13px;
+  border-radius: 10px;
+  font-weight: bold;
+}
+
+/* 주문 */
+#customerArea {
+  padding: 20px;
+  background: #fff1c9;
+  border-bottom: 3px solid #e4c17c;
+}
+
+.customer {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.face {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #ffd3a5;
+  border: 4px solid #8c5839;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 38px;
+}
+
+.orderBox {
+  flex: 1;
+  background: white;
+  border: 3px solid #5b3824;
+  border-radius: 15px;
+  padding: 12px 18px;
+  position: relative;
+}
+
+.orderBox::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 25px;
+  border-width: 8px 12px 8px 0;
+  border-style: solid;
+  border-color: transparent #5b3824 transparent transparent;
+}
+
+/* 조리 공간 */
+#kitchen {
+  padding: 20px;
+}
+
+.sectionTitle {
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+/* 냄비 */
+#potArea {
+  background: #d9e2e7;
+  border: 4px solid #76848a;
+  border-radius: 20px;
+  padding: 20px;
+  text-align: center;
+}
+
+#pot {
+  width: 220px;
+  height: 130px;
+  margin: 10px auto;
+  background: linear-gradient(#555, #222);
+  border-radius: 20px 20px 45px 45px;
+  border: 8px solid #333;
+  position: relative;
+  overflow: hidden;
+}
+
+#water {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 10px;
+  height: 65px;
+  background: #8fd7ff;
+  border-radius: 50%;
+  transition: .3s;
+}
+
+#ramen {
+  position: absolute;
+  left: 35px;
+  right: 35px;
+  bottom: 20px;
+  font-size: 48px;
+  display: none;
+  animation: noodle 1s infinite alternate;
+}
+
+@keyframes noodle {
+  from { transform: rotate(-3deg); }
+  to { transform: rotate(3deg); }
+}
+
+.boiling {
+  animation: shake .12s infinite alternate;
+}
+
+@keyframes shake {
+  from { transform: translateX(-2px); }
+  to { transform: translateX(2px); }
+}
+
+#boilText {
+  font-weight: bold;
+  color: #d63a25;
+  min-height: 24px;
+}
+
+/* 재료 */
+.ingredients {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.ingredient {
+  border: 3px solid #bd8b48;
+  border-radius: 12px;
+  padding: 12px 5px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: bold;
+  transition: .15s;
+}
+
+.ingredient:hover {
+  transform: translateY(-4px);
+  background: #fff1c2;
+}
+
+.ingredient:active {
+  transform: scale(.94);
+}
+
+.ingredient.used {
+  opacity: .4;
+}
+
+/* 버튼 */
+.actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+button {
+  border: none;
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+#cookBtn {
+  background: #ff7043;
+  color: white;
+  flex: 1;
+}
+
+#serveBtn {
+  background: #42a85f;
+  color: white;
+  flex: 1;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+/* 진행바 */
+.progressBox {
+  margin-top: 15px;
+}
+
+.progress {
+  height: 20px;
+  background: #bbb;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+#progress {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #ffcc33, #ff5722);
+  transition: width .1s linear;
+}
+
+/* 로그 */
+#message {
+  text-align: center;
+  padding: 12px;
+  min-height: 50px;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+/* 모바일 */
+@media(max-width:600px) {
+  header h1 {
+    font-size: 20px;
+  }
+
+  .stats {
+    gap: 5px;
+  }
+
+  .stat {
+    padding: 6px;
+    font-size: 13px;
+  }
+
+  .ingredients {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .customer {
+    align-items: flex-start;
+  }
+
+  .face {
+    width: 55px;
+    height: 55px;
+    font-size: 28px;
+  }
+
+  #pot {
+    width: 180px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+<header>
+  <h1>🍜 맛있는 라면가게</h1>
+
+  <div class="stats">
+    <div class="stat">💰 <span id="money">0</span></div>
+    <div class="stat">⭐ <span id="score">0</span></div>
+    <div class="stat">🔥 <span id="combo">0</span></div>
+  </div>
+</header>
+
+<section id="customerArea">
+
+  <div class="customer">
+
+    <div class="face" id="face">🙂</div>
+
+    <div class="orderBox">
+      <div>손님이 주문했습니다!</div>
+      <h2 id="orderText">매운 라면 🌶️</h2>
+      <div>
+        남은 시간:
+        <strong><span id="time">30</span>초</strong>
+      </div>
+    </div>
+
+  </div>
+
+</section>
+
+<section id="kitchen">
+
+  <div class="sectionTitle">🔥 조리대</div>
+
+  <div id="potArea">
+
+    <div id="pot">
+      <div id="water"></div>
+      <div id="ramen">🍜</div>
+    </div>
+
+    <div id="boilText">물을 먼저 끓여주세요!</div>
+
+    <div class="progressBox">
+      <div class="progress">
+        <div id="progress"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sectionTitle" style="margin-top:20px;">
+    🥬 재료를 클릭해서 넣으세요
+  </div>
+
+  <div class="ingredients">
+
+    <button class="ingredient" data-item="noodle">
+      🍜<br>면
+    </button>
+
+    <button class="ingredient" data-item="spicy">
+      🌶️<br>고춧가루
+    </button>
+
+    <button class="ingredient" data-item="egg">
+      🥚<br>계란
+    </button>
+
+    <button class="ingredient" data-item="green">
+      🥬<br>파
+    </button>
+
+    <button class="ingredient" data-item="meat">
+      🥩<br>고기
+    </button>
+
+    <button class="ingredient" data-item="cheese">
+      🧀<br>치즈
+    </button>
+
+    <button class="ingredient" data-item="garlic">
+      🧄<br>마늘
+    </button>
+
+    <button class="ingredient" data-item="water">
+      💧<br>물
+    </button>
+
+  </div>
+
+  <div class="actions">
+
+    <button id="cookBtn">
+      🔥 끓이기
+    </button>
+
+    <button id="serveBtn">
+      🍜 손님에게 서빙
+    </button>
+
+  </div>
+
+</section>
+
+<div id="message">
+  물을 넣고 라면을 만들어 보세요!
+</div>
+
+</div>
+
+<script>
+
+/* ==========================
+   게임 데이터
+========================== */
+
+const recipes = [
+  {
+    name: "매운 라면 🌶️",
+    items: ["water", "noodle", "spicy", "green"],
+    emoji: "🥵"
+  },
+  {
+    name: "계란 라면 🥚",
+    items: ["water", "noodle", "egg", "green"],
+    emoji: "😋"
+  },
+  {
+    name: "치즈 라면 🧀",
+    items: ["water", "noodle", "cheese"],
+    emoji: "😍"
+  },
+  {
+    name: "고기 라면 🥩",
+    items: ["water", "noodle", "meat", "green"],
+    emoji: "🤤"
+  },
+  {
+    name: "마늘 라면 🧄",
+    items: ["water", "noodle", "garlic", "green"],
+    emoji: "😊"
+  }
+];
+
+let currentRecipe;
+
+let selectedItems = [];
+
+let cooking = false;
+let cooked = false;
+
+let cookProgress = 0;
+
+let money = 0;
+let score = 0;
+let combo = 0;
+
+let timeLeft = 30;
+let timer;
+
+
+/* ==========================
+   HTML 요소
+========================== */
+
+const moneyEl = document.getElementById("money");
+const scoreEl = document.getElementById("score");
+const comboEl = document.getElementById("combo");
+
+const orderText = document.getElementById("orderText");
+const face = document.getElementById("face");
+
+const timeEl = document.getElementById("time");
+const progressEl = document.getElementById("progress");
+
+const ramen = document.getElementById("ramen");
+const pot = document.getElementById("pot");
+
+const message = document.getElementById("message");
+const boilText = document.getElementById("boilText");
+
+const cookBtn = document.getElementById("cookBtn");
+const serveBtn = document.getElementById("serveBtn");
+
+
+/* ==========================
+   새 손님
+========================== */
+
+function newCustomer() {
+
+  currentRecipe =
+    recipes[Math.floor(Math.random() * recipes.length)];
+
+  selectedItems = [];
+
+  cooking = false;
+  cooked = false;
+
+  cookProgress = 0;
+
+  progressEl.style.width = "0%";
+
+  ramen.style.display = "none";
+
+  pot.classList.remove("boiling");
+
+  boilText.textContent =
+    "물을 넣고 재료를 준비하세요!";
+
+  orderText.textContent =
+    currentRecipe.name;
+
+  face.textContent =
+    "🙂";
+
+  timeLeft = 30;
+
+  timeEl.textContent =
+    timeLeft;
+
+  document.querySelectorAll(".ingredient")
+    .forEach(btn => btn.classList.remove("used"));
+
+  clearInterval(timer);
+
+  timer = setInterval(() => {
+
+    timeLeft--;
+
+    timeEl.textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+
+      clearInterval(timer);
+
+      combo = 0;
+
+      comboEl.textContent = combo;
+
+      message.textContent =
+        "😢 손님이 너무 오래 기다려서 돌아갔어요!";
+
+      face.textContent = "😡";
+
+      setTimeout(newCustomer, 1500);
+    }
+
+  }, 1000);
+
+}
+
+
+/* ==========================
+   재료 넣기
+========================== */
+
+document.querySelectorAll(".ingredient")
+.forEach(button => {
+
+  button.addEventListener("click", () => {
+
+    if (cooking || cooked) {
+
+      message.textContent =
+        "이미 조리가 시작됐어요!";
+
+      return;
+    }
+
+    const item =
+      button.dataset.item;
+
+    if (selectedItems.includes(item)) {
+
+      message.textContent =
+        "그 재료는 이미 넣었어요!";
+
+      return;
+    }
+
+    selectedItems.push(item);
+
+    button.classList.add("used");
+
+    message.textContent =
+      `${button.innerText.replace(/\n/g, " ")} 재료를 넣었습니다!`;
+
+    /* 물 */
+    if (item === "water") {
+
+      document.getElementById("water")
+        .style.height = "75px";
+
+      boilText.textContent =
+        "💧 물이 들어갔어요!";
+    }
+
+    /* 면 */
+    if (item === "noodle") {
+
+      ramen.style.display = "block";
+
+      boilText.textContent =
+        "🍜 면을 넣었습니다!";
+    }
+
+  });
+
+});
+
+
+/* ==========================
+   끓이기
+========================== */
+
+cookBtn.addEventListener("click", () => {
+
+  if (cooking) return;
+
+  if (!selectedItems.includes("water")) {
+
+    message.textContent =
+      "💧 먼저 물을 넣어주세요!";
+
+    return;
+  }
+
+  if (!selectedItems.includes("noodle")) {
+
+    message.textContent =
+      "🍜 면도 넣어주세요!";
+
+    return;
+  }
+
+  cooking = true;
+
+  pot.classList.add("boiling");
+
+  boilText.textContent =
+    "🔥 보글보글 끓이는 중...";
+
+  message.textContent =
+    "타이밍을 잘 맞춰 끓여주세요!";
+
+  const interval =
+    setInterval(() => {
+
+      cookProgress += 2;
+
+      progressEl.style.width =
+        cookProgress + "%";
+
+      if (cookProgress >= 100) {
+
+        clearInterval(interval);
+
+        cooking = false;
+        cooked = true;
+
+        pot.classList.remove("boiling");
+
+        boilText.textContent =
+          "✨ 완성!";
+
+        message.textContent =
+          "🍜 라면이 완성됐어요! 지금 서빙하세요!";
+
+      }
+
+    }, 100);
+
+});
+
+
+/* ==========================
+   서빙
+========================== */
+
+serveBtn.addEventListener("click", () => {
+
+  if (!cooked) {
+
+    message.textContent =
+      "🔥 아직 라면이 완성되지 않았어요!";
+
+    return;
+  }
+
+  clearInterval(timer);
+
+  const required =
+    currentRecipe.items;
+
+  const hasAll =
+    required.every(item =>
+      selectedItems.includes(item)
+    );
+
+  const extraItems =
+    selectedItems.filter(item =>
+      !required.includes(item)
+    );
+
+  let earned = 0;
+
+  if (hasAll && extraItems.length === 0) {
+
+    /* 완벽한 요리 */
+
+    earned =
+      100 + timeLeft * 3;
+
+    combo++;
+
+    score += earned;
+
+    money += Math.floor(earned / 2);
+
+    face.textContent =
+      currentRecipe.emoji;
+
+    message.textContent =
+      `🎉 완벽해요! +${earned}점`;
+
+  }
+
+  else if (hasAll) {
+
+    /* 재료는 맞지만 추가 재료가 있음 */
+
+    earned =
+      60 + timeLeft * 2;
+
+    combo = 0;
+
+    score += earned;
+
+    money += Math.floor(earned / 3);
+
+    face.textContent =
+      "😐";
+
+    message.textContent =
+      `👍 괜찮지만 레시피와 조금 달라요! +${earned}점`;
+
+  }
+
+  else {
+
+    /* 실패 */
+
+    combo = 0;
+
+    face.textContent =
+      "😡";
+
+    message.textContent =
+      "💥 으악! 주문한 라면이 아니에요!";
+
+  }
+
+  moneyEl.textContent = money;
+  scoreEl.textContent = score;
+  comboEl.textContent = combo;
+
+  setTimeout(newCustomer, 1800);
+
+});
+
+
+/* ==========================
+   게임 시작
+========================== */
+
+newCustomer();
+
+</script>
+
+</body>
+</html>

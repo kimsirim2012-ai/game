@@ -1,0 +1,2527 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<title>🎴 컬러 카드 게임</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    margin: 0;
+    background: #10131a;
+    color: white;
+    font-family: Arial, sans-serif;
+    overflow-x: hidden;
+}
+
+/* =========================
+   헤더
+========================= */
+
+header {
+    background: linear-gradient(135deg, #202632, #151922);
+    padding: 14px;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 3px 15px rgba(0,0,0,.4);
+}
+
+header h1 {
+    font-size: 25px;
+    margin: 0 0 8px;
+}
+
+.rules {
+    max-width: 1000px;
+    margin: auto;
+    background: #303746;
+    border-radius: 12px;
+    padding: 10px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #ddd;
+}
+
+/* =========================
+   공통
+========================= */
+
+button {
+    border: none;
+    border-radius: 12px;
+    padding: 13px 20px;
+    background: #4caf50;
+    color: white;
+    font-size: 17px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:active {
+    transform: scale(.95);
+}
+
+input {
+    width: 100px;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 20px;
+    margin: 8px;
+}
+
+.small {
+    font-size: 13px;
+    color: #aaa;
+}
+
+/* =========================
+   시작 화면
+========================= */
+
+#setup {
+    text-align: center;
+    padding: 35px 15px;
+}
+
+#setup h2 {
+    font-size: 28px;
+}
+
+.startBox {
+    max-width: 500px;
+    margin: auto;
+    background: #1d222c;
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.3);
+}
+
+/* =========================
+   게임
+========================= */
+
+#game {
+    display: none;
+    width: 96%;
+    max-width: 1200px;
+    margin: auto;
+    padding: 15px 10px 40px;
+}
+
+/* 플레이어 */
+
+.players {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    margin-bottom: 15px;
+    padding: 5px;
+}
+
+.player {
+    min-width: 120px;
+    background: #252b36;
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    font-size: 14px;
+    transition: .2s;
+}
+
+.player.active {
+    border: 3px solid #ffd54f;
+    background: #3a414e;
+    transform: scale(1.03);
+}
+
+.player .points {
+    color: #ffd54f;
+    font-weight: bold;
+}
+
+/* 메시지 */
+
+#message {
+    text-align: center;
+    min-height: 35px;
+    margin: 8px;
+    color: #ffd54f;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+/* =========================
+   게임 테이블
+========================= */
+
+#table {
+    background:
+        radial-gradient(circle at center, #167044, #07522f 70%);
+    border: 8px solid #542e18;
+    border-radius: 30px;
+    min-height: 500px;
+    padding: 25px;
+    text-align: center;
+    box-shadow:
+        inset 0 0 40px rgba(0,0,0,.4),
+        0 10px 30px rgba(0,0,0,.4);
+}
+
+#currentColor {
+    margin-bottom: 20px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+/* 중앙 */
+
+#center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 70px;
+    margin: 30px 0;
+}
+
+.deckArea {
+    text-align: center;
+}
+
+/* =========================
+   카드
+========================= */
+
+.card {
+    width: 105px;
+    height: 150px;
+    border-radius: 15px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 6px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    border: 4px solid white;
+    box-shadow: 0 5px 12px rgba(0,0,0,.45);
+    user-select: none;
+    transition: .15s;
+}
+
+.card:hover {
+    transform: translateY(-6px);
+}
+
+.red {
+    background: #e53935;
+}
+
+.yellow {
+    background: #fbc02d;
+    color: #111;
+}
+
+.green {
+    background: #43a047;
+}
+
+.blue {
+    background: #1e88e5;
+}
+
+.black {
+    background: #111;
+}
+
+.deck {
+    background:
+        repeating-linear-gradient(
+            45deg,
+            #111,
+            #111 8px,
+            #444 8px,
+            #444 16px
+        );
+    cursor: pointer;
+}
+
+/* =========================
+   내 손패
+========================= */
+
+.handArea {
+    margin-top: 20px;
+}
+
+.handArea h2 {
+    text-align: center;
+}
+
+#hand {
+    background: #1a1f28;
+    padding: 18px;
+    border-radius: 18px;
+    min-height: 180px;
+    text-align: center;
+}
+
+/* =========================
+   상단 메뉴
+========================= */
+
+.topMenu {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.topMenu button {
+    background: #3949ab;
+}
+
+.topMenu button.shopButton {
+    background: #ff9800;
+}
+
+.scoreBox {
+    text-align: center;
+    background: #252b36;
+    padding: 12px;
+    border-radius: 14px;
+    margin-bottom: 12px;
+}
+
+.scoreBox strong {
+    color: #ffd54f;
+    font-size: 21px;
+}
+
+/* =========================
+   상점
+========================= */
+
+#shop {
+    display: none;
+    max-width: 1000px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #1c222d;
+    border-radius: 20px;
+}
+
+#shop h2 {
+    text-align: center;
+}
+
+.shopCard {
+    max-width: 500px;
+    margin: auto;
+    background: linear-gradient(135deg, #4527a0, #7b1fa2);
+    border-radius: 20px;
+    padding: 25px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0,0,0,.4);
+}
+
+.pack {
+    width: 150px;
+    height: 200px;
+    margin: 15px auto;
+    border: 5px solid #ffd54f;
+    border-radius: 18px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 55px;
+    background:
+        linear-gradient(135deg, #311b92, #9c27b0);
+    box-shadow: 0 10px 25px rgba(0,0,0,.4);
+}
+
+/* =========================
+   컬렉션
+========================= */
+
+#collection {
+    display: none;
+    max-width: 1000px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #1c222d;
+    border-radius: 20px;
+}
+
+.collectionCards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* 컬렉션 카드 */
+
+.collectionCard {
+    width: 85px;
+    height: 120px;
+    margin: 5px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid white;
+    font-weight: bold;
+    font-size: 28px;
+}
+
+/* =========================
+   색상 선택
+========================= */
+
+.colorButtons {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 20;
+}
+
+.colorBox {
+    background: #292929;
+    padding: 25px;
+    border-radius: 20px;
+    text-align: center;
+}
+
+.colorBox h3 {
+    margin-top: 0;
+}
+
+.colorChoice {
+    width: 80px;
+    height: 80px;
+    margin: 6px;
+    border-radius: 15px;
+    border: 4px solid white;
+}
+
+/* =========================
+   승리 화면
+========================= */
+
+#resultModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.85);
+    justify-content: center;
+    align-items: center;
+    z-index: 30;
+}
+
+.resultBox {
+    width: 90%;
+    max-width: 600px;
+    background: #252b36;
+    padding: 25px;
+    border-radius: 20px;
+    text-align: center;
+}
+
+.resultRow {
+    background: #343b48;
+    margin: 8px 0;
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 18px;
+}
+
+/* =========================
+   반응형
+========================= */
+
+@media (max-width: 600px) {
+
+    header h1 {
+        font-size: 21px;
+    }
+
+    .rules {
+        font-size: 11px;
+    }
+
+    #table {
+        min-height: 430px;
+        padding: 15px;
+        border-width: 5px;
+    }
+
+    #center {
+        gap: 25px;
+    }
+
+    .card {
+        width: 78px;
+        height: 112px;
+        font-size: 30px;
+        border-width: 3px;
+    }
+
+    .player {
+        min-width: 105px;
+    }
+
+    #message {
+        font-size: 15px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+
+<h1>🎴 컬러 카드 게임</h1>
+
+<div class="rules">
+<b>게임 규칙</b><br>
+같은 색 또는 같은 숫자의 카드를 낼 수 있습니다.
++2는 다음 플레이어가 2장을 먹고 한 턴 쉽니다.
++4는 다음 플레이어가 4장을 먹고 한 턴 쉬며 색상을 바꿉니다.
+색상 변경 카드는 원하는 색으로 변경합니다.
+카드를 먼저 모두 없앤 플레이어가 게임에서 승리합니다.
+</div>
+
+</header>
+
+
+<!-- =========================
+     시작 화면
+========================= -->
+
+<div id="setup">
+
+<div class="startBox">
+
+<h2>🎮 게임 시작</h2>
+
+<p>AI 플레이어 수를 입력하세요.</p>
+
+<input
+    id="aiCount"
+    type="number"
+    min="1"
+    max="5"
+    value="2"
+>
+
+<br>
+
+<button onclick="startGame()">
+게임 시작
+</button>
+
+<p class="small">
+최대 5명의 AI와 플레이할 수 있습니다.
+</p>
+
+</div>
+
+</div>
+
+
+<!-- =========================
+     게임
+========================= -->
+
+<div id="game">
+
+<div class="scoreBox">
+    ⭐ 내 포인트:
+    <strong id="myPoints">0</strong>점
+</div>
+
+<div class="topMenu">
+
+<button onclick="showShop()">
+🛒 상점
+</button>
+
+<button onclick="showCollection()">
+🎴 내 카드팩
+</button>
+
+</div>
+
+
+<div class="players" id="players"></div>
+
+<div id="message"></div>
+
+
+<div id="table">
+
+<div id="currentColor">
+현재 색상: -
+</div>
+
+
+<div id="center">
+
+<div class="deckArea">
+
+<div
+    class="card deck"
+    onclick="drawCard()"
+>
+🎴
+</div>
+
+<div class="small">
+카드 뽑기
+</div>
+
+</div>
+
+
+<div id="discard"></div>
+
+</div>
+
+</div>
+
+
+<div class="handArea">
+
+<h2>🖐 내 카드</h2>
+
+<div id="hand"></div>
+
+</div>
+
+</div>
+
+
+<!-- =========================
+     상점
+========================= -->
+
+<div id="shop">
+
+<h2>🛒 카드팩 상점</h2>
+
+<div class="scoreBox">
+현재 포인트:
+<strong id="shopPoints">0</strong>점
+</div>
+
+<div class="shopCard">
+
+<div class="pack">
+🎁
+</div>
+
+<h2>컬러 카드팩</h2>
+
+<p>
+카드팩을 구매하면<br>
+랜덤 카드 3장을 얻습니다!
+</p>
+
+<p>
+💰 가격:
+<strong>10 포인트</strong>
+</p>
+
+<button onclick="buyPack()">
+🎁 카드팩 구매
+</button>
+
+<br><br>
+
+<button onclick="closeShop()">
+닫기
+</button>
+
+</div>
+
+</div>
+
+
+<!-- =========================
+     컬렉션
+========================= -->
+
+<div id="collection">
+
+<h2>🎴 내 카드 컬렉션</h2>
+
+<div class="scoreBox">
+보유 카드:
+<strong id="collectionCount">0</strong>장
+</div>
+
+<div
+    class="collectionCards"
+    id="collectionCards"
+></div>
+
+<br>
+
+<div style="text-align:center">
+
+<button onclick="closeCollection()">
+닫기
+</button>
+
+</div>
+
+</div>
+
+
+<!-- =========================
+     색상 선택
+========================= -->
+
+<div
+    class="colorButtons"
+    id="colorModal"
+>
+
+<div class="colorBox">
+
+<h3>🎨 색상을 선택하세요</h3>
+
+<button
+    class="colorChoice red"
+    onclick="chooseColor('red')"
+></button>
+
+<button
+    class="colorChoice yellow"
+    onclick="chooseColor('yellow')"
+></button>
+
+<button
+    class="colorChoice green"
+    onclick="chooseColor('green')"
+></button>
+
+<button
+    class="colorChoice blue"
+    onclick="chooseColor('blue')"
+></button>
+
+</div>
+
+</div>
+
+
+<!-- =========================
+     결과
+========================= -->
+
+<div id="resultModal">
+
+<div class="resultBox">
+
+<h2>🏆 게임 결과</h2>
+
+<div id="resultList"></div>
+
+<br>
+
+<button onclick="newGame()">
+🔄 다시 하기
+</button>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* ==================================================
+   게임 변수
+================================================== */
+
+let deck = [];
+let players = [];
+let discardPile = [];
+
+let currentPlayer = 0;
+let currentColor = null;
+let direction = 1;
+
+let waitingForColor = false;
+let gameFinished = false;
+
+/* 게임 속도
+   기존 800ms보다 느리게 설정
+*/
+const AI_DELAY = 1800;
+
+const colors = [
+    "red",
+    "yellow",
+    "green",
+    "blue"
+];
+
+
+/* ==================================================
+   포인트 저장
+================================================== */
+
+let points =
+    parseInt(localStorage.getItem("colorGamePoints")) || 0;
+
+
+/* ==================================================
+   카드 컬렉션 저장
+================================================== */
+
+let collection =
+    JSON.parse(
+        localStorage.getItem("colorGameCollection") || "[]"
+    );
+
+
+/* ==================================================
+   카드 만들기
+================================================== */
+
+function createDeck() {
+
+    deck = [];
+
+    colors.forEach(color => {
+
+        for (let n = 1; n <= 9; n++) {
+
+            deck.push({
+                color: color,
+                value: n,
+                type: "number"
+            });
+
+        }
+
+        for (let i = 0; i < 3; i++) {
+
+            deck.push({
+                color: color,
+                value: "+2",
+                type: "draw2"
+            });
+
+        }
+
+    });
+
+
+    /* +4 */
+
+    for (let i = 0; i < 4; i++) {
+
+        deck.push({
+            color: "black",
+            value: "+4",
+            type: "wild4"
+        });
+
+    }
+
+
+    /* 색상 변경 */
+
+    for (let i = 0; i < 4; i++) {
+
+        deck.push({
+            color: "black",
+            value: "색상",
+            type: "wild"
+        });
+
+    }
+
+
+    shuffle(deck);
+}
+
+
+/* ==================================================
+   셔플
+================================================== */
+
+function shuffle(array) {
+
+    for (
+        let i = array.length - 1;
+        i > 0;
+        i--
+    ) {
+
+        const j =
+            Math.floor(
+                Math.random() * (i + 1)
+            );
+
+        [
+            array[i],
+            array[j]
+        ] =
+        [
+            array[j],
+            array[i]
+        ];
+
+    }
+
+}
+
+
+/* ==================================================
+   게임 시작
+================================================== */
+
+function startGame() {
+
+    const aiCount =
+        parseInt(
+            document.getElementById("aiCount").value
+        );
+
+    if (
+        aiCount < 1 ||
+        aiCount > 5
+    ) {
+
+        alert(
+            "AI는 1~5명까지 가능합니다."
+        );
+
+        return;
+    }
+
+
+    document.getElementById("setup")
+        .style.display = "none";
+
+    document.getElementById("game")
+        .style.display = "block";
+
+
+    document.getElementById("shop")
+        .style.display = "none";
+
+    document.getElementById("collection")
+        .style.display = "none";
+
+
+    createDeck();
+
+
+    players = [];
+
+
+    /* 나 */
+
+    players.push({
+
+        name: "나",
+        hand: [],
+        ai: false,
+        points: points,
+        finishOrder: null
+
+    });
+
+
+    /* AI */
+
+    for (
+        let i = 1;
+        i <= aiCount;
+        i++
+    ) {
+
+        players.push({
+
+            name: "AI " + i,
+            hand: [],
+            ai: true,
+            points: 0,
+            finishOrder: null
+
+        });
+
+    }
+
+
+    /* 각 플레이어 7장 */
+
+    players.forEach(player => {
+
+        for (
+            let i = 0;
+            i < 7;
+            i++
+        ) {
+
+            player.hand.push(
+                drawFromDeck()
+            );
+
+        }
+
+    });
+
+
+    /* 첫 카드 */
+
+    let firstCard =
+        drawFromDeck();
+
+
+    while (
+        firstCard.type === "wild4"
+    ) {
+
+        deck.push(firstCard);
+
+        shuffle(deck);
+
+        firstCard =
+            drawFromDeck();
+
+    }
+
+
+    discardPile = [
+        firstCard
+    ];
+
+
+    currentColor =
+        firstCard.color;
+
+    currentPlayer = 0;
+
+    direction = 1;
+
+    gameFinished = false;
+
+    waitingForColor = false;
+
+
+    render();
+
+    setMessage(
+        "🎮 당신의 차례입니다."
+    );
+
+}
+
+
+/* ==================================================
+   덱에서 카드 뽑기
+================================================== */
+
+function drawFromDeck() {
+
+    if (deck.length === 0) {
+
+        if (
+            discardPile.length <= 1
+        ) {
+
+            return null;
+        }
+
+
+        const top =
+            discardPile.pop();
+
+
+        deck =
+            discardPile.splice(0);
+
+
+        shuffle(deck);
+
+
+        discardPile = [
+            top
+        ];
+
+    }
+
+
+    return deck.pop();
+
+}
+
+
+/* ==================================================
+   카드 낼 수 있는지
+================================================== */
+
+function canPlay(card) {
+
+    const top =
+        discardPile[
+            discardPile.length - 1
+        ];
+
+
+    if (!top) {
+        return true;
+    }
+
+
+    if (
+        card.color === "black"
+    ) {
+
+        return true;
+    }
+
+
+    if (
+        card.color === currentColor
+    ) {
+
+        return true;
+    }
+
+
+    if (
+        card.value === top.value
+    ) {
+
+        return true;
+    }
+
+
+    return false;
+
+}
+
+
+/* ==================================================
+   카드 내기
+================================================== */
+
+function playCard(
+    playerIndex,
+    cardIndex
+) {
+
+    if (gameFinished) return;
+
+    if (
+        playerIndex !== currentPlayer
+    ) {
+
+        return;
+    }
+
+
+    const player =
+        players[playerIndex];
+
+
+    const card =
+        player.hand[cardIndex];
+
+
+    if (!card) return;
+
+
+    if (!canPlay(card)) {
+
+        if (!player.ai) {
+
+            setMessage(
+                "❌ 이 카드는 지금 낼 수 없습니다."
+            );
+
+        }
+
+        return;
+    }
+
+
+    player.hand.splice(
+        cardIndex,
+        1
+    );
+
+
+    discardPile.push(card);
+
+
+    if (
+        card.color !== "black"
+    ) {
+
+        currentColor =
+            card.color;
+
+    }
+
+
+    render();
+
+
+    /* =========================================
+       플레이어 탈락/완주 처리
+    ========================================= */
+
+    if (
+        player.hand.length === 0
+    ) {
+
+        finishPlayer(playerIndex);
+
+        return;
+    }
+
+
+    /* =========================================
+       +2
+    ========================================= */
+
+    if (
+        card.type === "draw2"
+    ) {
+
+        nextPlayer();
+
+        drawCardsForCurrentPlayer(2);
+
+        skipTurn();
+
+        return;
+    }
+
+
+    /* =========================================
+       +4
+    ========================================= */
+
+    if (
+        card.type === "wild4"
+    ) {
+
+        if (player.ai) {
+
+            currentColor =
+                colors[
+                    Math.floor(
+                        Math.random() *
+                        colors.length
+                    )
+                ];
+
+            setMessage(
+                player.name +
+                "이 색상을 " +
+                colorName(currentColor) +
+                "으로 바꿨습니다."
+            );
+
+            nextPlayer();
+
+            drawCardsForCurrentPlayer(4);
+
+            skipTurn();
+
+        } else {
+
+            waitingForColor = true;
+
+            document.getElementById(
+                "colorModal"
+            ).style.display = "flex";
+
+            pendingDraw4 = true;
+
+        }
+
+        render();
+
+        return;
+    }
+
+
+    /* =========================================
+       일반 색상 변경
+    ========================================= */
+
+    if (
+        card.type === "wild"
+    ) {
+
+        if (player.ai) {
+
+            currentColor =
+                colors[
+                    Math.floor(
+                        Math.random() *
+                        colors.length
+                    )
+                ];
+
+            setMessage(
+                player.name +
+                "이 색상을 " +
+                colorName(currentColor) +
+                "으로 바꿨습니다."
+            );
+
+            nextPlayer();
+
+        } else {
+
+            waitingForColor = true;
+
+            pendingDraw4 = false;
+
+            document.getElementById(
+                "colorModal"
+            ).style.display = "flex";
+
+        }
+
+        render();
+
+        return;
+    }
+
+
+    /* 일반 카드 */
+
+    nextPlayer();
+
+}
+
+
+/* ==================================================
+   +4 대기 변수
+================================================== */
+
+let pendingDraw4 = false;
+
+
+/* ==================================================
+   색상 선택
+================================================== */
+
+function chooseColor(color) {
+
+    currentColor = color;
+
+    waitingForColor = false;
+
+
+    document.getElementById(
+        "colorModal"
+    ).style.display = "none";
+
+
+    if (pendingDraw4) {
+
+        pendingDraw4 = false;
+
+        nextPlayer();
+
+        drawCardsForCurrentPlayer(4);
+
+        skipTurn();
+
+    } else {
+
+        nextPlayer();
+
+    }
+
+}
+
+
+/* ==================================================
+   다음 플레이어
+================================================== */
+
+function nextPlayer() {
+
+    if (gameFinished) return;
+
+
+    currentPlayer += direction;
+
+
+    if (
+        currentPlayer >=
+        players.length
+    ) {
+
+        currentPlayer = 0;
+
+    }
+
+
+    if (
+        currentPlayer < 0
+    ) {
+
+        currentPlayer =
+            players.length - 1;
+
+    }
+
+
+    render();
+
+
+    if (
+        players[currentPlayer].ai
+    ) {
+
+        setMessage(
+            players[currentPlayer].name +
+            " 생각 중..."
+        );
+
+
+        setTimeout(
+            aiTurn,
+            AI_DELAY
+        );
+
+    } else {
+
+        setMessage(
+            "🎮 당신의 차례입니다."
+        );
+
+    }
+
+}
+
+
+/* ==================================================
+   턴 건너뛰기
+================================================== */
+
+function skipTurn() {
+
+    if (gameFinished) return;
+
+
+    currentPlayer += direction;
+
+
+    if (
+        currentPlayer >=
+        players.length
+    ) {
+
+        currentPlayer = 0;
+
+    }
+
+
+    if (
+        currentPlayer < 0
+    ) {
+
+        currentPlayer =
+            players.length - 1;
+
+    }
+
+
+    render();
+
+
+    if (
+        players[currentPlayer].ai
+    ) {
+
+        setMessage(
+            players[currentPlayer].name +
+            " 생각 중..."
+        );
+
+        setTimeout(
+            aiTurn,
+            AI_DELAY
+        );
+
+    } else {
+
+        setMessage(
+            "🎮 당신의 차례입니다."
+        );
+
+    }
+
+}
+
+
+/* ==================================================
+   카드 뽑기 - 사람
+================================================== */
+
+function drawCard() {
+
+    if (gameFinished) return;
+
+    if (
+        currentPlayer !== 0
+    ) {
+
+        return;
+    }
+
+
+    const player =
+        players[0];
+
+
+    const card =
+        drawFromDeck();
+
+
+    if (!card) {
+
+        setMessage(
+            "카드를 뽑을 수 없습니다."
+        );
+
+        return;
+    }
+
+
+    player.hand.push(card);
+
+
+    render();
+
+
+    setMessage(
+        "🎴 카드를 한 장 뽑았습니다."
+    );
+
+}
+
+
+/* ==================================================
+   AI 턴
+================================================== */
+
+function aiTurn() {
+
+    if (gameFinished) return;
+
+
+    if (
+        !players[currentPlayer] ||
+        !players[currentPlayer].ai
+    ) {
+
+        return;
+    }
+
+
+    const player =
+        players[currentPlayer];
+
+
+    let playable = [];
+
+
+    player.hand.forEach(
+        (card, index) => {
+
+            if (
+                canPlay(card)
+            ) {
+
+                playable.push({
+                    card: card,
+                    index: index
+                });
+
+            }
+
+        }
+    );
+
+
+    /* 낼 카드가 있음 */
+
+    if (
+        playable.length > 0
+    ) {
+
+        /*
+         * 너무 빠르게 끝나지 않도록
+         * 랜덤 + 약간의 생각 시간
+         */
+
+        const choice =
+            playable[
+                Math.floor(
+                    Math.random() *
+                    playable.length
+                )
+            ];
+
+
+        playCard(
+            currentPlayer,
+            choice.index
+        );
+
+
+        return;
+    }
+
+
+    /* 낼 카드가 없음 */
+
+    const newCard =
+        drawFromDeck();
+
+
+    if (newCard) {
+
+        player.hand.push(
+            newCard
+        );
+
+    }
+
+
+    render();
+
+
+    /*
+     * 뽑은 카드도 낼 수 있으면
+     * 바로 내지 않고 기다린 후 플레이
+     */
+
+    if (
+        newCard &&
+        canPlay(newCard)
+    ) {
+
+        setMessage(
+            player.name +
+            "이 카드를 뽑았습니다."
+        );
+
+
+        setTimeout(
+            () => {
+
+                playCard(
+                    currentPlayer,
+                    player.hand.length - 1
+                );
+
+            },
+            AI_DELAY
+        );
+
+    } else {
+
+        setTimeout(
+            () => {
+
+                nextPlayer();
+
+            },
+            AI_DELAY
+        );
+
+    }
+
+}
+
+
+/* ==================================================
+   여러 장 먹기
+================================================== */
+
+function drawCardsForCurrentPlayer(
+    amount
+) {
+
+    const player =
+        players[currentPlayer];
+
+
+    for (
+        let i = 0;
+        i < amount;
+        i++
+    ) {
+
+        const card =
+            drawFromDeck();
+
+
+        if (card) {
+
+            player.hand.push(
+                card
+            );
+
+        }
+
+    }
+
+
+    render();
+
+
+    setMessage(
+        player.name +
+        "이 " +
+        amount +
+        "장의 카드를 먹었습니다."
+    );
+
+}
+
+
+/* ==================================================
+   플레이어 완주
+================================================== */
+
+let finishOrder = 0;
+
+
+function finishPlayer(
+    playerIndex
+) {
+
+    finishOrder++;
+
+
+    const player =
+        players[playerIndex];
+
+
+    player.finishOrder =
+        finishOrder;
+
+
+    /* 포인트 */
+
+    let earned = 0;
+
+
+    if (
+        finishOrder === 1
+    ) {
+
+        earned = 5;
+
+    } else if (
+        finishOrder === 2
+    ) {
+
+        earned = 3;
+
+    }
+
+
+    if (!player.ai) {
+
+        points += earned;
+
+        savePoints();
+
+        updatePointsUI();
+
+    }
+
+
+    render();
+
+
+    /*
+     * 1등이 나오면 바로 게임 종료하지 않고
+     * AI도 순위를 정할 수 있도록 계속 진행
+     */
+
+    const unfinished =
+        players.filter(
+            p => p.finishOrder === null
+        );
+
+
+    if (
+        unfinished.length <= 1
+    ) {
+
+        endGame();
+
+        return;
+    }
+
+
+    /*
+     * 현재 플레이어가 완주했으므로
+     * 다음 플레이어로 이동
+     */
+
+    nextPlayer();
+
+
+}
+
+
+/* ==================================================
+   게임 종료
+================================================== */
+
+function endGame() {
+
+    gameFinished = true;
+
+
+    /*
+     * 아직 완주하지 않은 플레이어도
+     * 순위를 부여
+     */
+
+    players.forEach(player => {
+
+        if (
+            player.finishOrder === null
+        ) {
+
+            finishOrder++;
+
+            player.finishOrder =
+                finishOrder;
+
+        }
+
+    });
+
+
+    /*
+     * 순위 정렬
+     */
+
+    const sorted =
+        [...players].sort(
+            (a, b) =>
+                a.finishOrder -
+                b.finishOrder
+        );
+
+
+    let html = "";
+
+
+    sorted.forEach(player => {
+
+        let reward = 0;
+
+
+        if (
+            player.finishOrder === 1
+        ) {
+
+            reward = 5;
+
+        } else if (
+            player.finishOrder === 2
+        ) {
+
+            reward = 3;
+
+        }
+
+
+        html += `
+            <div class="resultRow">
+                ${
+                    getMedal(
+                        player.finishOrder
+                    )
+                }
+                ${player.name}
+                -
+                ${player.finishOrder}등
+
+                ${
+                    reward > 0
+                    ? `<br>
+                       ⭐ +${reward} 포인트`
+                    : ""
+                }
+            </div>
+        `;
+
+    });
+
+
+    document.getElementById(
+        "resultList"
+    ).innerHTML = html;
+
+
+    document.getElementById(
+        "resultModal"
+    ).style.display = "flex";
+
+
+    updatePointsUI();
+
+}
+
+
+/* ==================================================
+   메달
+================================================== */
+
+function getMedal(order) {
+
+    if (order === 1)
+        return "🥇";
+
+    if (order === 2)
+        return "🥈";
+
+    if (order === 3)
+        return "🥉";
+
+    return "🏅";
+
+}
+
+
+/* ==================================================
+   화면 표시
+================================================== */
+
+function render() {
+
+    renderPlayers();
+
+    renderDiscard();
+
+    renderHand();
+
+}
+
+
+/* ==================================================
+   플레이어 표시
+================================================== */
+
+function renderPlayers() {
+
+    const box =
+        document.getElementById(
+            "players"
+        );
+
+
+    box.innerHTML = "";
+
+
+    players.forEach(
+        (player, index) => {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+
+            div.className =
+                "player";
+
+
+            if (
+                index === currentPlayer &&
+                player.finishOrder === null
+            ) {
+
+                div.classList.add(
+                    "active"
+                );
+
+            }
+
+
+            div.innerHTML = `
+                <b>${player.name}</b>
+                <br>
+
+                카드
+                ${player.hand.length}장
+
+                ${
+                    player.finishOrder
+                    ? `<br>
+                       ${getMedal(
+                           player.finishOrder
+                       )}
+                       ${player.finishOrder}등`
+                    : ""
+                }
+
+                ${
+                    index === currentPlayer &&
+                    player.finishOrder === null
+                    ? "<br>▶ 현재 턴"
+                    : ""
+                }
+            `;
+
+
+            box.appendChild(div);
+
+        }
+    );
+
+}
+
+
+/* ==================================================
+   버린 카드
+================================================== */
+
+function renderDiscard() {
+
+    const box =
+        document.getElementById(
+            "discard"
+        );
+
+
+    box.innerHTML = "";
+
+
+    const card =
+        discardPile[
+            discardPile.length - 1
+        ];
+
+
+    if (!card) return;
+
+
+    const div =
+        createCardElement(card);
+
+
+    box.appendChild(div);
+
+
+    document.getElementById(
+        "currentColor"
+    ).innerText =
+        "현재 색상: " +
+        colorName(currentColor);
+
+}
+
+
+/* ==================================================
+   내 손패
+================================================== */
+
+function renderHand() {
+
+    const box =
+        document.getElementById(
+            "hand"
+        );
+
+
+    box.innerHTML = "";
+
+
+    if (!players[0]) return;
+
+
+    const hand =
+        players[0].hand;
+
+
+    hand.forEach(
+        (card, index) => {
+
+            const div =
+                createCardElement(card);
+
+
+            div.onclick = () => {
+
+                if (
+                    currentPlayer !== 0
+                ) {
+
+                    return;
+                }
+
+
+                if (
+                    waitingForColor
+                ) {
+
+                    return;
+                }
+
+
+                playCard(
+                    0,
+                    index
+                );
+
+            };
+
+
+            box.appendChild(div);
+
+        }
+    );
+
+}
+
+
+/* ==================================================
+   카드 HTML
+================================================== */
+
+function createCardElement(card) {
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+
+    div.className =
+        "card " +
+        card.color;
+
+
+    div.innerText =
+        card.value;
+
+
+    return div;
+
+}
+
+
+/* ==================================================
+   메시지
+================================================== */
+
+function setMessage(text) {
+
+    document.getElementById(
+        "message"
+    ).innerText = text;
+
+}
+
+
+/* ==================================================
+   색상 이름
+================================================== */
+
+function colorName(color) {
+
+    const names = {
+
+        red: "빨강 🔴",
+
+        yellow: "노랑 🟡",
+
+        green: "초록 🟢",
+
+        blue: "파랑 🔵"
+
+    };
+
+
+    return names[color] || "-";
+
+}
+
+
+/* ==================================================
+   포인트 저장
+================================================== */
+
+function savePoints() {
+
+    localStorage.setItem(
+        "colorGamePoints",
+        points
+    );
+
+}
+
+
+/* ==================================================
+   포인트 UI
+================================================== */
+
+function updatePointsUI() {
+
+    document.getElementById(
+        "myPoints"
+    ).innerText = points;
+
+
+    document.getElementById(
+        "shopPoints"
+    ).innerText = points;
+
+}
+
+
+/* ==================================================
+   상점 열기
+================================================== */
+
+function showShop() {
+
+    document.getElementById(
+        "shop"
+    ).style.display = "block";
+
+
+    document.getElementById(
+        "collection"
+    ).style.display = "none";
+
+
+    updatePointsUI();
+
+
+    window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth"
+    });
+
+}
+
+
+/* ==================================================
+   상점 닫기
+================================================== */
+
+function closeShop() {
+
+    document.getElementById(
+        "shop"
+    ).style.display = "none";
+
+}
+
+
+/* ==================================================
+   카드팩 구매
+================================================== */
+
+function buyPack() {
+
+    const PACK_PRICE = 10;
+
+
+    if (
+        points < PACK_PRICE
+    ) {
+
+        alert(
+            "❌ 포인트가 부족합니다!\n\n" +
+            "카드팩 가격은 10포인트입니다."
+        );
+
+        return;
+    }
+
+
+    points -= PACK_PRICE;
+
+
+    /*
+     * 랜덤 카드 3장 획득
+     */
+
+    const newCards = [];
+
+
+    for (
+        let i = 0;
+        i < 3;
+        i++
+    ) {
+
+        const card =
+            createRandomCollectionCard();
+
+
+        collection.push(card);
+
+        newCards.push(card);
+
+    }
+
+
+    savePoints();
+
+    saveCollection();
+
+    updatePointsUI();
+
+
+    alert(
+        "🎉 카드팩을 열었습니다!\n\n" +
+        newCards
+            .map(
+                card =>
+                    "🎴 " +
+                    card.color +
+                    " " +
+                    card.value
+            )
+            .join("\n")
+    );
+
+
+    renderCollection();
+
+}
+
+
+/* ==================================================
+   랜덤 컬렉션 카드
+================================================== */
+
+function createRandomCollectionCard() {
+
+    const randomColor =
+        colors[
+            Math.floor(
+                Math.random() *
+                colors.length
+            )
+        ];
+
+
+    const randomNumber =
+        Math.floor(
+            Math.random() * 9
+        ) + 1;
+
+
+    const randomType =
+        Math.random();
+
+
+    if (
+        randomType < .15
+    ) {
+
+        return {
+            color: randomColor,
+            value: "+2"
+        };
+
+    }
+
+
+    return {
+
+        color: randomColor,
+
+        value: randomNumber
+
+    };
+
+}
+
+
+/* ==================================================
+   컬렉션 저장
+================================================== */
+
+function saveCollection() {
+
+    localStorage.setItem(
+        "colorGameCollection",
+        JSON.stringify(
+            collection
+        )
+    );
+
+}
+
+
+/* ==================================================
+   컬렉션 열기
+================================================== */
+
+function showCollection() {
+
+    document.getElementById(
+        "collection"
+    ).style.display = "block";
+
+
+    document.getElementById(
+        "shop"
+    ).style.display = "none";
+
+
+    renderCollection();
+
+
+    window.scrollTo({
+        top: document.body.scrollHeight,
+        behavior: "smooth"
+    });
+
+}
+
+
+/* ==================================================
+   컬렉션 닫기
+================================================== */
+
+function closeCollection() {
+
+    document.getElementById(
+        "collection"
+    ).style.display = "none";
+
+}
+
+
+/* ==================================================
+   컬렉션 표시
+================================================== */
+
+function renderCollection() {
+
+    const box =
+        document.getElementById(
+            "collectionCards"
+        );
+
+
+    box.innerHTML = "";
+
+
+    document.getElementById(
+        "collectionCount"
+    ).innerText =
+        collection.length;
+
+
+    if (
+        collection.length === 0
+    ) {
+
+        box.innerHTML =
+            `<p class="small">
+                아직 보유한 카드가 없습니다.
+                <br>
+                상점에서 카드팩을 구매해보세요!
+            </p>`;
+
+        return;
+    }
+
+
+    collection.forEach(
+        card => {
+
+            const div =
+                document.createElement(
+                    "div"
+                );
+
+
+            div.className =
+                "collectionCard " +
+                card.color;
+
+
+            div.innerText =
+                card.value;
+
+
+            box.appendChild(div);
+
+        }
+    );
+
+}
+
+
+/* ==================================================
+   다시 게임
+================================================== */
+
+function newGame() {
+
+    document.getElementById(
+        "resultModal"
+    ).style.display = "none";
+
+
+    /*
+     * 새 게임에서는 순위 초기화
+     */
+
+    finishOrder = 0;
+
+
+    startGame();
+
+}
+
+
+/* ==================================================
+   처음 포인트 표시
+================================================== */
+
+updatePointsUI();
+
+</script>
+
+</body>
+</html>
