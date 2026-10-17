@@ -1,0 +1,15 @@
+{
+  "name": "blockland-voxel-game",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Offline WebGL voxel sandbox with crafting, combat and a 21-minute day cycle",
+  "scripts": {
+    "build": "node build.cjs",
+    "test": "node --test tests/physics.test.cjs tests/world.test.cjs tests/ecosystem.test.cjs tests/items.test.cjs tests/adventure.test.cjs tests/day-cycle.test.cjs",
+    "test:day-cycle": "node tests/day-cycle-browser.cjs",
+    "test:combat": "node tests/update4-browser.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

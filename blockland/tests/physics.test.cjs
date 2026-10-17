@@ -1,0 +1,28 @@
+const{test}=require('node:test');const assert=require('node:assert/strict');
+const{Player,CONFIG}=require('../src/physics.js');
+const flat={solid:(x,y,z)=>y<=0,maxY:36};
+const make=(world=flat,p={x:.5,y:1,z:.5})=>new Player(world,p);
+function run(p,seconds,input={},fps=60){for(let i=0;i<Math.round(seconds*fps);i++)p.advance(1/fps,input);return p;}
+const near=(a,b,t=1e-6)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
+test('15/30/60/144 FPS simulate identical time, movement and collisions',()=>{const results=[15,30,60,144].map(fps=>run(make(),4,{forward:1},fps));for(const p of results){near(p.simulatedTime,4);assert.equal(p.ticks,480);near(p.position.y,1);near(p.position.z,results[0].position.z);}});
+test('irregular frame intervals give the same physics result',()=>{const a=run(make(),3,{strafe:1}),b=make();for(let i=0;i<60;i++){b.advance(.01,{strafe:1});b.advance(.04,{strafe:1});}near(a.position.x,b.position.x);near(a.position.y,b.position.y);});
+test('standing AABB has width .6, height 1.8 and eye 1.62',()=>{const p=make(),b=p.bounds();near(b.max.x-b.min.x,.6);near(b.max.y-b.min.y,1.8);near(p.eyeHeight,1.62);});
+test('walking accelerates toward 4.317 m/s and brakes to rest',()=>{const p=make();p.advance(1/60,{forward:1});assert.ok(Math.abs(p.velocity.z)<CONFIG.walk);run(p,1,{forward:1});near(-p.velocity.z,4.317);run(p,.5);near(p.velocity.z,0);});
+test('sprint is faster and only available while moving forward',()=>{const p=run(make(),1,{forward:1,sprint:true});assert.ok(p.sprinting);near(-p.velocity.z,5.612);run(p,.5,{strafe:1,sprint:true});assert.equal(p.sprinting,false);});
+test('diagonal movement never exceeds axial speed',()=>{const a=run(make(),2,{forward:1}),b=run(make(),2,{forward:1,strafe:1});near(Math.hypot(a.velocity.x,a.velocity.z),Math.hypot(b.velocity.x,b.velocity.z));near(Math.hypot(a.position.x-.5,a.position.z-.5),Math.hypot(b.position.x-.5,b.position.z-.5));});
+test('jump apex approximates 1.25 blocks and lands exactly',()=>{const p=make();run(p,.1);p.advance(1/120,{jump:true});let apex=p.position.y;for(let i=0;i<180;i++){p.advance(1/120,{});apex=Math.max(apex,p.position.y);}assert.ok(apex>2.2&&apex<2.3,`apex ${apex}`);near(p.position.y,1);assert.ok(p.grounded);});
+test('no midair jump is available',()=>{const a=make(flat,{x:0,y:10,z:0}),b=make(flat,{x:0,y:10,z:0});run(a,.25,{jump:true});run(b,.25,{});near(a.position.y,b.position.y);});
+test('fast falls do not tunnel through a one-block floor',()=>{const p=make(flat,{x:.5,y:25,z:.5});p.velocity.y=-78;run(p,.5,{},15);near(p.position.y,1);assert.equal(p.velocity.y,0);});
+test('swept horizontal collision resolves flush with wall',()=>{const p=make({solid:(x,y,z)=>y<=0||(x===2&&y<6)}, {x:.5,y:1,z:.5});run(p,3,{strafe:1});near(p.position.x,1.7);assert.equal(p.collides(),false);});
+test('high horizontal speed also cannot tunnel',()=>{const p=make({solid:(x,y,z)=>y<=0||x===2});p.velocity.x=250;p.moveAxis('x',4);near(p.position.x,1.7);assert.equal(p.velocity.x,0);});
+test('head collision stops ascent without penetrating the ceiling',()=>{const p=make({solid:(x,y,z)=>y<=0||y===3});run(p,.1);let max=1;p.advance(1/120,{jump:true});for(let i=0;i<120;i++){p.advance(1/120,{});max=Math.max(max,p.position.y);}assert.ok(max<=1.2000001);near(p.position.y,1);});
+test('crouch changes height and slows movement',()=>{const p=run(make(),1,{forward:1,crouch:true});assert.ok(p.crouched);near(p.height,1.5);near(p.eyeHeight,1.27);near(-p.velocity.z,1.295);});
+test('crouch prevents walking off a block edge',()=>{const p=make({solid:(x,y,z)=>x===0&&z===0&&y===0});run(p,.1);run(p,5,{strafe:1,crouch:true});assert.ok(p.position.x<1.30001);near(p.position.y,1);run(p,1,{strafe:1});assert.ok(p.position.y<0);});
+test('crouch edge protection works diagonally',()=>{const p=make({solid:(x,y,z)=>x===0&&z===0&&y===0});run(p,.1);run(p,4,{strafe:1,forward:-1,crouch:true});near(p.position.y,1);assert.ok(p.supported());});
+test('releasing crouch cannot expand inside a low ceiling',()=>{const p=make({solid:(x,y,z)=>y===3},{x:.5,y:1.4,z:.5});p.crouched=true;p.advance(1/120,{});assert.ok(p.crouched);assert.equal(p.collides(),false);});
+test('submerged player sinks slowly, swims upward, then descends',()=>{const p=make({solid:(x,y,z)=>y<=0,fluid:(x,y,z)=>y>=1&&y<8},{x:.5,y:3,z:.5});run(p,.5);assert.ok(p.inWater&&p.headUnderwater);assert.ok(p.position.y>2);const y=p.position.y;run(p,.75,{jump:true});assert.ok(p.position.y>y);run(p,1,{forward:1});near(-p.velocity.z,2.2);const h=p.position.y;run(p,.3,{crouch:true});assert.ok(p.position.y<h);});
+test('flying preserves collision and supports ascent and descent',()=>{const p=make();run(p,.5,{flying:true,jump:true});assert.ok(p.position.y>2);run(p,1,{flying:true,descend:true});assert.ok(p.position.y>=1);});
+test('body overlap uses physical feet, not camera bob or eye height',()=>{const p=make();assert.equal(p.intersectsBlock(0,1,0),true);assert.equal(p.intersectsBlock(0,0,0),false);assert.equal(p.intersectsBlock(1,1,0),false);});
+test('world boundaries are clamped at the body radius',()=>{const p=make({...flat,bounds:{min:{x:0,z:0},max:{x:4,z:4}}});run(p,5,{strafe:1,forward:-1});near(p.position.x,3.7);near(p.position.z,3.7);});
+test('saved positions inside a block are moved to a safe space',()=>{const p=make({solid:(x,y,z)=>y<=4,maxY:36},{x:.5,y:2,z:.5});assert.ok(p.collides());assert.ok(p.ensureSafe());near(p.position.y,5);assert.equal(p.collides(),false);});
+test('suspension catch-up is bounded and observable',()=>{const p=make();p.advance(10,{});near(p.simulatedTime,.25);near(p.discardedTime,9.75);assert.equal(p.ticks,30);});

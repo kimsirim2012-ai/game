@@ -1,0 +1,61 @@
+/* Bounded, chunk-owned wildlife and villagers with articulated voxel models. */
+(function(root){'use strict';
+const NAMES={cow:'소',pig:'돼지',sheep:'양',chicken:'닭',horse:'말',rabbit:'토끼',wolf:'늑대',fox:'여우',fish:'물고기',villager:'마을 주민',zombie:'좀비',skeleton:'스켈레톤',creeper:'크리퍼',spider:'거미'};
+const SPECIES={cow:[1.1,1.35,.6],pig:[1.25,.9,.5],sheep:[1.1,1.25,.6],chicken:[1.1,.85,.3],horse:[1.7,2,.65],rabbit:[1.5,.85,.35],wolf:[1.6,1.1,.45],fox:[1.7,.95,.4],fish:[1,.3,.2],villager:[1.2,1.8,.55],zombie:[1.8,1.8,.6],skeleton:[2,1.8,.55],creeper:[1.65,1.7,.6],spider:[2.7,.85,1.05]};
+class Ecosystem {
+ constructor(world,Physics){this.world=world;this.Physics=Physics;this.entities=new Map();this.owned=new Map();this.time=0;this.cap=76;this.scanAt=0;}
+ spawn(type,id,x,z,home=null,variant=0){if(this.entities.size>=this.cap||this.entities.has(id)||this.canSpawn&&!this.canSpawn(id))return null;const c=this.world.info(x,z),cfg=SPECIES[type],water=type==='fish';let y=water?Math.max(c.h+1,c.water-2):c.h+1;const body=new this.Physics.Player({solid:(a,b,d)=>this.world.solid(a,b,d),fluid:(a,b,d)=>this.world.get(a,b,d)===9,maxY:112},{x,y,z},{walk:cfg[0],groundAcceleration:12,groundBrake:15,airAcceleration:3,width:cfg[2],height:cfg[1],jump:7.8});if(body.collides()){let found=false;for(const [dx,dz]of [[2,0],[-2,0],[0,2],[0,-2],[3,3],[-3,-3]]){const p={x:x+dx,y:this.world.info(x+dx,z+dz).h+1,z:z+dz};if(!body.collides(p)&&this.world.get(Math.floor(p.x),Math.floor(p.y),Math.floor(p.z))!==9){body.reset(p);found=true;break;}}if(!found)return null;}
+  const e={id,type,variant,body,yaw:this.world.terrain.hash(Math.floor(x),Math.floor(z),17001)*Math.PI*2,action:'look',timer:0,tickAt:this.time,home,waypoint:0,render:{...body.position},speed:0,headTurn:0};this.entities.set(id,e);return e;
+ }
+ populate(player,radius){const w=this.world,t=w.terrain;for(const k of this.owned.keys())if(!w.chunks.has(k))this.owned.delete(k);for(const [id,e]of this.entities){const p=e.body.position;if(Math.hypot(p.x-player.x,p.z-player.z)>Math.min(105,radius*16+12)){this.entities.delete(id);this.owned.delete(e.owner);}}
+  const sorted=[...w.chunks.values()].sort((a,b)=>(a.cx*16+8-player.x)**2+(a.cz*16+8-player.z)**2-((b.cx*16+8-player.x)**2+(b.cz*16+8-player.z)**2));
+  for(const c of sorted){if(this.entities.size>=this.cap-(this.combatEnabled?22:8))break;if(Math.hypot(c.cx*16+8-player.x,c.cz*16+8-player.z)>88)continue;const k=c.key;if(this.owned.has(k))continue;this.owned.set(k,true);
+   for(let i=0;i<2;i++){const x=c.cx*16+2+Math.floor(t.hash(c.cx,c.cz,10001+i)*12),z=c.cz*16+2+Math.floor(t.hash(c.cx,c.cz,11001+i)*12),info=w.info(x,z),h=t.hash(c.cx,c.cz,12001+i);let types=info.h<info.water-1?['fish']:info.biome==='desert'?['rabbit']:info.biome==='snow'?['wolf','rabbit','sheep']:info.biome==='forest'?['wolf','fox','pig','cow','chicken']:['cow','pig','sheep','chicken','horse','rabbit'];if(info.biome==='mountain')types=['sheep','rabbit'];if(info.village&&Math.hypot(x-info.village.x,z-info.village.z)<19)continue;const e=this.spawn(types[Math.floor(h*types.length)],k+':'+i,x+.5,z+.5);if(e)e.owner=k;}
+  }
+  // A village contributes at most four residents. They follow its real road branches.
+  const villages=new Map();for(const c of sorted){const v=t.nearbyVillage(c.cx*16+8,c.cz*16+8);if(v&&Math.hypot(v.x-player.x,v.z-player.z)<74)villages.set(v.id,v);}
+  for(const v of villages.values())for(let i=0;i<4;i++){const id='npc:'+v.id+':'+i;if(this.entities.has(id))continue;const e=this.spawn('villager',id,v.x+.5+(i%2?-.4:.4),v.z+(i-1.5)*4,v,i);if(e)e.owner='npc:'+v.id;}
+ }
+ update(dt,player,radius){this.time+=dt;if(this.time>=this.scanAt){this.populate(player,radius);this.scanAt=this.time+1;}
+  for(const e of this.entities.values()){if(e.monster||e.deadAt!==undefined)continue;const p=e.body.position,distance=Math.hypot(p.x-player.x,p.z-player.z),period=distance<25?.05:distance<55?.12:.25,elapsed=this.time-e.tickAt;if(elapsed<period)continue;e.tickAt=this.time;let forward=0,jump=false;
+   const shy=['rabbit','fox','chicken','horse'].includes(e.type);e.headTurn=distance<7?Math.atan2(player.x-p.x,player.z-p.z)-e.yaw:0;
+   if(e.type==='fish'){if(this.world.get(Math.floor(p.x),Math.floor(p.y),Math.floor(p.z))!==9){e.yaw+=Math.PI*.7;}const n={x:p.x+Math.sin(e.yaw)*elapsed,z:p.z+Math.cos(e.yaw)*elapsed};if(this.world.get(Math.floor(n.x),Math.floor(p.y),Math.floor(n.z))===9){p.x=n.x;p.z=n.z;}else e.yaw+=1.5;const column=this.world.info(p.x,p.z);p.y=Math.max(column.h+1,Math.min(column.water-.35,p.y+Math.sin(this.time+e.variant)*elapsed*.3));e.speed=1;continue;}
+   if(e.type==='villager'){const v=e.home,side=e.variant%2?-1:1,branch=e.variant<2?-7:7,points=[[v.x+.5,v.z],[v.x+.5,v.z+branch],[v.x+side*10,v.z+branch],[v.x+.5,v.z+branch]],goal=points[e.waypoint%points.length];if(distance<3){e.action='look';}else{e.yaw=Math.atan2(goal[0]-p.x,goal[1]-p.z);forward=.7;e.action='walk';if(Math.hypot(goal[0]-p.x,goal[1]-p.z)<.7)e.waypoint++;}}
+   else if(shy&&distance<4){e.yaw=Math.atan2(p.x-player.x,p.z-player.z);forward=1;e.action='run';e.timer=this.time+1.2;}
+   else{if(this.time>e.timer){const h=this.world.terrain.hash(Math.floor(p.x)+Math.floor(this.time)*7,Math.floor(p.z),14001);e.action=h<.2?'graze':h<.38?'look':'walk';e.yaw+=(h-.5)*2;e.timer=this.time+2+h*4;}forward=e.action==='walk'?.55:e.action==='run'?1:0;if(distance<2&&e.action!=='run'){e.action='look';forward=0;}}
+   if(forward){const a=Math.floor(p.x+Math.sin(e.yaw)*.8),b=Math.floor(p.z+Math.cos(e.yaw)*.8),ground=this.world.info(a,b);if(ground.h+1>p.y+.35&&ground.h+1<p.y+1.15)jump=true;if(this.world.solid(a,Math.floor(p.y+1.15),b)||ground.h+1>p.y+1.2||this.world.get(a,Math.floor(p.y),b)===9){e.yaw+=1.1;forward=0;e.timer=this.time+.3;}}
+   e.body.advance(Math.min(.25,elapsed),{forward,yaw:Math.PI-e.yaw,jump});if(e.body.position.y<-5){this.entities.delete(e.id);continue;}e.speed=Math.hypot(e.body.velocity.x,e.body.velocity.z);
+  }
+ }
+ nearestNPC(p,dir=null){let nearest=null,best=4;for(const e of this.entities.values()){if(e.type!=='villager')continue;const v=e.body.position,dx=v.x-p.x,dy=v.y+1.4-p.y,dz=v.z-p.z;let distance=Math.hypot(dx,dy,dz);if(dir){let enter=0,exit=4;const lo={x:v.x-.33,y:v.y,z:v.z-.33},hi={x:v.x+.33,y:v.y+1.96,z:v.z+.33};for(const k of ['x','y','z']){if(Math.abs(dir[k])<1e-8){if(p[k]<lo[k]||p[k]>hi[k])exit=-1;}else{const a=(lo[k]-p[k])/dir[k],b=(hi[k]-p[k])/dir[k];enter=Math.max(enter,Math.min(a,b));exit=Math.min(exit,Math.max(a,b));}}if(exit<enter)continue;distance=enter;}if(distance<best){best=distance;e.hitDistance=distance;nearest=e;}}return nearest;}
+ dialogue(e){const v=e.home,lines=[`어서 오세요! 여기는 ${v.name}이에요. 길을 따라가면 집과 들판을 만날 수 있어요.`,`꽃밭의 꽃은 왼쪽 클릭으로 모을 수 있어요. E를 누르면 수집한 식물을 볼 수 있답니다.`,`물속에서는 Space를 누르면 헤엄칠 수 있어요. 여행이 멀어지면 F로 하늘에서 지형을 둘러보세요.`,`숲에는 여우와 늑대가 살고, 물에는 물고기가 있어요. 렌더 거리는 메뉴에서 바꿀 수 있어요.`];return{name:['하루','솔','여울','나리'][e.variant%4],village:v.name,text:lines[e.variant%4]};}
+ geometry(out,emitBox,dt,eye,maxDistance){for(const e of this.entities.values()){const p=e.body.position;if(Math.hypot(p.x-eye.x,p.z-eye.z)>maxDistance)continue;const blend=1-Math.exp(-12*dt);for(const a of ['x','y','z'])e.render[a]+=(p[a]-e.render[a])*blend;this.model(e,out,emitBox);}}
+ model(e,out,emit){const p=e.render,phase=this.time*(e.action==='run'?14:8),stride=Math.min(.65,e.speed*.4),legs=Math.sin(phase)*stride;
+  const fall=e.deadAt!==undefined?Math.min(1,((this.combatClock||0)-e.deadAt)/.55)*Math.PI/2:0;
+  const part=(x,y,z,w,h,d,tile,rot=0,head=false)=>{const yy=(y-.7)*Math.cos(fall)-z*Math.sin(fall)+.7,zz=(y-.7)*Math.sin(fall)+z*Math.cos(fall);emit(out,{x:p.x+x*Math.cos(e.yaw)+zz*Math.sin(e.yaw),y:p.y+yy,z:p.z-x*Math.sin(e.yaw)+zz*Math.cos(e.yaw)},{x:w,y:h,z:d},e.yaw+(head?Math.max(-.65,Math.min(.65,e.headTurn)):0),rot+fall,(e.hurtUntil||0)>(this.combatClock||0)?54:e.flash?48:tile,0);};
+  const feet=(w,z,h,tile,count=4)=>{for(let i=0;i<count;i++){const x=(i%2?1:-1)*w,zz=count===2?0:(i<2?z:-z);part(x,h/2,zz,.16,h,.16,tile,(i%2===(i<2?0:1)?1:-1)*legs);}};
+  const eyes=(y,z,width=.2)=>{for(const x of [-width,width])part(x,y,z,.055,.06,.025,63,0,true);};
+  if(['zombie','skeleton','creeper','spider'].includes(e.type)){
+   if(e.type==='creeper'){part(0,.92,0,.55,.9,.44,52);part(0,1.58,0,.58,.5,.54,62);feet(.22,.22,.45,52);eyes(1.64,.285,.14);part(0,1.43,.286,.12,.17,.02,63);part(-.1,1.4,.286,.08,.1,.02,63);part(.1,1.4,.286,.08,.1,.02,63);return;}
+   if(e.type==='spider'){part(0,.5,-.2,.72,.55,.9,51);part(0,.46,.48,.56,.4,.5,63);for(let i=0;i<4;i++)for(const side of [-1,1])part(side*.65,.3,(i-1.5)*.3,.65,.1,.1,51,Math.sin(phase+i)*.15);part(-.18,.55,.745,.12,.1,.02,54);part(.18,.55,.745,.12,.1,.02,54);eyes(.46,.745,.09);return;}
+   const sk=e.type==='skeleton',skin=sk?48:52;part(0,1.06,0,sk?.34:.55,.65,.3,sk?49:55);part(0,.78,0,sk?.35:.56,.08,.31,51);part(0,1.62,0,.5,.5,.46,skin);eyes(1.69,.245,.13);part(0,1.53,.245,.2,.05,.02,63);part(-.16,.35,0,sk?.13:.23,.7,.24,sk?48:55,legs);part(.16,.35,0,sk?.13:.23,.7,.24,sk?48:55,-legs);part(-.38,1.23,.28,.16,.18,.7,skin);part(.38,1.23,.28,.16,.18,.7,skin);if(sk){part(.5,1.23,.68,.1,.65,.1,57);part(.5,1.23,.81,.025,.6,.025,48);}return;
+  }
+  if(e.type==='villager'){const cloth=[52,54,55,56][e.variant%4],hair=[51,57,49,63][e.variant%4];part(0,1.1,0,.55,.7,.32,cloth);part(0,1.65,0,.46,.46,.44,50,0,true);part(0,1.86,0,.5,.12,.49,hair,0,true);if(e.variant===1)part(0,1.88,.04,.68,.06,.62,58,0,true);if(e.variant===2)part(0,1.4,.18,.53,.1,.05,54);if(e.variant===3)part(0,1.48,.23,.35,.16,.05,hair,0,true);part(0,1.57,.27,.12,.19,.12,50,0,true);eyes(1.68,.235,.12);part(-.15,.35,0,.22,.7,.25,51,legs);part(.15,.35,0,.22,.7,.25,51,-legs);part(-.38,1.1,0,.18,.65,.22,cloth,-legs);part(.38,1.1,0,.18,.65,.22,cloth,legs);return;}
+  if(e.type==='fish'){part(0,.13,0,.19,.22,.49,56);part(0,.13,-.31,.07,.29,.17,55,Math.sin(phase)*.35);part(0,.29,-.02,.04,.13,.22,55);eyes(.19,.23,.085);return;}
+  if(e.type==='horse'){part(0,1.1,0,.65,.75,1.45,57);feet(.22,.48,.85,51);part(0,1.53,.62,.32,.8,.4,57,-.25);part(0,1.9,.87,.34,.4,.6,57);part(0,1.85,1.14,.36,.22,.14,51);part(-.11,2.18,.71,.09,.27,.12,57);part(.11,2.18,.71,.09,.27,.12,57);part(0,1.6,.42,.14,.76,.16,51,-.25);part(0,.9,-.8,.17,.66,.18,51,Math.sin(phase)*.14);eyes(1.98,1.18,.14);return;}
+  if(e.type==='rabbit'){part(0,.36,0,.38,.42,.55,58);part(0,.66,.26,.31,.3,.31,58,0,true);part(-.1,.97,.22,.09,.4,.1,58);part(.1,.97,.22,.09,.4,.1,58);part(-.1,.98,.28,.04,.28,.02,53);part(.1,.98,.28,.04,.28,.02,53);feet(.14,.18,.2,58);part(0,.42,-.32,.19,.2,.18,48);eyes(.72,.42,.1);return;}
+  if(e.type==='chicken'){part(0,.46,0,.4,.43,.46,48);part(0,.79,.17,.25,.33,.26,48,0,true);part(0,.76,.35,.18,.11,.16,59);part(0,1,.13,.08,.14,.21,54);part(0,.61,.3,.1,.14,.07,54);part(-.25,.48,0,.12,.3,.36,49,legs);part(.25,.48,0,.12,.3,.36,49,-legs);feet(.1,0,.25,59,2);eyes(.86,.315,.095);return;}
+  const cow=e.type==='cow',pig=e.type==='pig',sheep=e.type==='sheep',fox=e.type==='fox',wolf=e.type==='wolf',tile=cow?51:pig?53:sheep?48:fox?60:49;
+  const height=cow?1.03:sheep?.94:.65,length=cow?1.15:sheep?1.05:.95;
+  part(0,height-.2,0,cow?.67:.58,e.sheared?.43:cow||sheep?.65:.5,length,e.sheared?49:tile);feet(cow?.23:.19,length*.32,cow?.53:sheep?.46:.35,pig?53:51);
+  part(0,height,.58,.43,.43,.43,sheep?49:tile,e.action==='graze'?.45:0,true);
+  if(cow){part(-.22,height-.1,.15,.15,.22,.33,48);part(.2,height-.14,-.25,.17,.3,.28,48);for(const x of [-.2,.2])part(x,height+.29,.5,.09,.22,.09,58);part(0,height-.1,.83,.35,.2,.14,53);}
+  if(pig)part(0,height-.04,.83,.27,.17,.15,61);
+  if(fox||wolf){part(0,height-.08,.86,.28,.2,.23,fox?48:49);part(0,height-.05,.99,.1,.1,.08,63);part(0,height-.22,-.65,.23,.24,.6,tile,Math.sin(phase)*.2);if(fox)part(0,height-.22,-.98,.23,.24,.16,48);}
+  for(const x of [-.25,.25])part(x,height+.16,.54,.14,fox||wolf?.23:.11,.15,tile);
+  if(!fox&&!wolf)part(0,height-.25,-length*.58,.09,.33,.1,tile,Math.sin(phase)*.3);eyes(height+.07,.805,.14);
+ }
+ stats(){const counts={};for(const e of this.entities.values())counts[e.type]=(counts[e.type]||0)+1;return{count:this.entities.size,cap:this.cap,species:counts,chunkRecords:this.owned.size};}
+}
+root.BlocklandEco={Ecosystem,NAMES,SPECIES};
+})(globalThis);
